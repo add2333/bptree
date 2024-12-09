@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define DEBUG
+
 /*
     以下首先实现一些内部使用的辅助函数
  */
@@ -70,19 +72,27 @@ void splitNode(Node *parent, long i) {
   // TODO STEP
   // 3：在parent节点的key数组中，第i位插入一个合适的key，用来分隔child和sibling
 
-  // ATTENTION: 这里key应该是sibling节点的首个key，因为是左闭右开区间
+  // ATTENTION: 这里key应该是sibling节点的首个key，因为是左闭右开区间，并且是插入，所以要先把i位及其之后的都后移一位
+  for (int j = parent->n; j > i; j--) {
+    parent->key[j] = parent->key[j - 1];
+  }
   parent->key[i] = sibling->key[0];
+
   // TODO STEP
   // 3：然后在parent节点的child数组中插入sibling节点，最后注意维护parent->n的值
-  parent->child[parent->n + 1] = sibling;
+  for (int j = parent->n + 1; j > i + 1; j--) {
+    parent->child[j] = parent->child[j - 1];
+  }
+  parent->child[i + 1] = sibling;
   parent->n++;
-  // TODO(yaomingrui): 这里是否需要先n++再赋值？否则数组不够大？
-
   // TODO END
 }
 
 // 向node中加入(key,value)对
 long insertToNode(Node *node, long key, long value) {
+#ifdef DEBUG
+  printf("insertToNode: key=%ld, value=%ld\n", key, value);
+#endif
   if (node->n > MAX_KEY) {
     return -1; // 已经超过MAX_KEY了，说明split功能没有写好，要检查splitNode函数
   }
@@ -113,14 +123,16 @@ long insertToNode(Node *node, long key, long value) {
   Node *child = node->child[current_idx + 1];
   // TODO STEP 3：对于非叶子节点，应该递归地调用本函数，将数据插入child节点中
   // TODO STEP
-  // 3：并注意根据返回结果判断是否应该返回-1、是否应该调用splitNode函数分裂child节点
+  // 3：并注意根据返回结果判断是否应该返回-1、是否应该调用splitNode函数分裂节点
+
+  // 递归插入数据到子节点
   if (insertToNode(child, key, value) == -1) {
-    if (child->n > MAX_KEY) {
-      splitNode(child, current_idx + 1);
-      insertToNode(child, key, value);
-    } else {
-      return -1;
-    }
+    return -1; // 如果插入失败，返回-1
+  }
+
+  // 先判断子节点是否已经满了，如果满了，分裂节点
+  if (child->n > MAX_KEY) {
+    splitNode(node, current_idx + 1);
   }
 
   // TODO END
