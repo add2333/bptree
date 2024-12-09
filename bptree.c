@@ -244,9 +244,9 @@ void mergeNode(Node *parent, long k) {
 long delFromNode(Node *node, long key) {
   long current_idx = searchKeyInNode(node, key);
   if (node->isLeaf) {
-    // TODO STEP 4：如果已存在相同的键，返回-1
+    // TODO STEP 4：如果不存在相同的键，返回-1
     // TODO STEP 4：否则在key和data数组中，删除第i位的数据，更新node->n的值
-
+    
     // TODO END
     return 0;
   }
