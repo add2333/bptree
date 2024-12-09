@@ -1,21 +1,28 @@
 CC = gcc
 CFLAGS = -Wall -g
 
-TARGET = bptree
+# 设置 build 目录
+BUILD_DIR = build
+
+TARGET = $(BUILD_DIR)/bptree
 SRCS = bptree.c main.c
-OBJS = $(SRCS:.c=.o)
+OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o)
 HEADERS = BPlusTree.h
+
+# 创建 build 目录（如果不存在）
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
 $(TARGET): $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET)
 
-%.o: %.c $(HEADERS)
+$(BUILD_DIR)/%.o: %.c $(HEADERS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 .PHONY: clean run r debug d
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -rf $(BUILD_DIR)
 
 run: $(TARGET)
 	./$(TARGET)
