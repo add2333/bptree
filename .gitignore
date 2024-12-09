@@ -1,2 +1,2 @@
-*.o
-bptree
+.vscode/
+build/
