@@ -24,7 +24,7 @@ $(BUILD_DIR)/%.o: %.c $(HEADERS) | $(BUILD_DIR)
 clean:
 	rm -rf $(BUILD_DIR)
 
-run: $(TARGET)
+run: clean $(TARGET)
 	./$(TARGET)
 
 r: run

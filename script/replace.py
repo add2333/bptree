@@ -4,8 +4,8 @@
 import re
 
 # 文件路径
-input_file = 'input.txt'  # 输入文件路径
-output_file = 'output.txt'  # 输出文件路径
+input_file = '/home/ymr/bptree/script/input.txt'  # 输入文件路径
+output_file = '/home/ymr/bptree/script/output.txt'  # 输出文件路径
 
 # 打开输入文件并读取内容
 with open(input_file, 'r') as f:

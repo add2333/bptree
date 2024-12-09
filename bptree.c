@@ -61,7 +61,9 @@ void splitNode(Node *parent, long i) {
     sibling->child = (Node **)malloc(sizeof(Node *) * (MAX_CHILD + 1));
     // TODO STEP
     // 3：将原来child节点key和child数组中的数据按照上述比例分给sibling节点
-    for (int j = 0; j < sibling->n; j++) {
+    // ATTENTION: 这里是 sibling->n + 1，因为 sibling 的 child 数量比 key
+    // 数量多一个
+    for (int j = 0; j < sibling->n + 1; j++) {
       sibling->key[j] = child->key[j + child->n + 1];
       sibling->child[j] = child->child[j + child->n + 1];
     }
@@ -72,11 +74,17 @@ void splitNode(Node *parent, long i) {
   // TODO STEP
   // 3：在parent节点的key数组中，第i位插入一个合适的key，用来分隔child和sibling
 
-  // ATTENTION: 这里key应该是sibling节点的首个key，因为是左闭右开区间，并且是插入，所以要先把i位及其之后的都后移一位
+  // ATTENTION: 是插入，所以要先把i位及其之后的都后移一位
   for (int j = parent->n; j > i; j--) {
     parent->key[j] = parent->key[j - 1];
   }
-  parent->key[i] = sibling->key[0];
+  // 如果分裂非叶结点，需要将 child->key[MAX_KEY / 2] 插入 parent->key[i] 中
+  if (!child->isLeaf) {
+    parent->key[i] = child->key[MAX_KEY / 2];
+  } else {
+    // 如果分裂叶结点，需要将 sibling->key[0] 插入 parent->key[i] 中
+    parent->key[i] = sibling->key[0];
+  }
 
   // TODO STEP
   // 3：然后在parent节点的child数组中插入sibling节点，最后注意维护parent->n的值
