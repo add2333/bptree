@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DEBUG
+// #define DEBUG
 
 /*
     以下首先实现一些内部使用的辅助函数
@@ -47,7 +47,7 @@ void splitNode(Node *parent, long i) {
     sibling->data = (long *)malloc(sizeof(long) * (MAX_KEY + 1));
     // TODO STEP
     // 3：将原来child节点key和data数组中的数据按照上述比例分给sibling节点
-    for (int j = 0; j < sibling->n; j++) {
+    for (long j = 0; j < sibling->n; j++) {
       sibling->key[j] = child->key[j + child->n];
       sibling->data[j] = child->data[j + child->n];
     }
@@ -63,7 +63,7 @@ void splitNode(Node *parent, long i) {
     // 3：将原来child节点key和child数组中的数据按照上述比例分给sibling节点
     // ATTENTION: 这里是 sibling->n + 1，因为 sibling 的 child 数量比 key
     // 数量多一个
-    for (int j = 0; j < sibling->n + 1; j++) {
+    for (long j = 0; j < sibling->n + 1; j++) {
       sibling->key[j] = child->key[j + child->n + 1];
       sibling->child[j] = child->child[j + child->n + 1];
     }
@@ -75,7 +75,7 @@ void splitNode(Node *parent, long i) {
   // 3：在parent节点的key数组中，第i位插入一个合适的key，用来分隔child和sibling
 
   // ATTENTION: 是插入，所以要先把i位及其之后的都后移一位
-  for (int j = parent->n; j > i; j--) {
+  for (long j = parent->n; j > i; j--) {
     parent->key[j] = parent->key[j - 1];
   }
   // 如果分裂非叶结点，需要将 child->key[MAX_KEY / 2] 插入 parent->key[i] 中
@@ -88,7 +88,7 @@ void splitNode(Node *parent, long i) {
 
   // TODO STEP
   // 3：然后在parent节点的child数组中插入sibling节点，最后注意维护parent->n的值
-  for (int j = parent->n + 1; j > i + 1; j--) {
+  for (long j = parent->n + 1; j > i + 1; j--) {
     parent->child[j] = parent->child[j - 1];
   }
   parent->child[i + 1] = sibling;
@@ -172,7 +172,11 @@ void mergeNode(Node *parent, long k) {
     if (offset > 0) {
       // 先把数据按照计算好的下标从右节点拷贝到左节点
       for (long i = lchild->n; i < left_size; i++) {
+        // ATTENTION:
+        // 这里将父节点用于分隔的键复制到左节点目前最后一个键的位置，因为这个分隔键也是右节点的第一个键，所以相当于复制了右节点的第一个键到左节点
         lchild->key[i] = parent->key[k];
+        // ATTENTION:
+        // 如果是叶子节点，就把分隔键设置为将要成为右节点第一个键的键（即第二个、第三个...因为第一个已经相当于被复制走了）
         if (lchild->isLeaf) {
           parent->key[k] = rchild->key[i - lchild->n + 1];
           lchild->data[i] = rchild->data[i - lchild->n];
@@ -201,18 +205,37 @@ void mergeNode(Node *parent, long k) {
     offset = right_size - rchild->n;
     if (offset > 0) {
       // 与上面的步骤相反，需要先把右节点的已有数据往后移，为拷贝数据腾出空间
-      if (lchild->isLeaf) {
+      if (rchild->isLeaf) {
         // TODO STEP 5：参考上面的代码，完成叶子结点的数据挪动
-
+        for (long i = rchild->n - 1; i >= 0; i--) {
+          rchild->key[i + offset] = rchild->key[i];
+          rchild->data[i + offset] = rchild->data[i];
+        }
+        for (long i = 0; i < offset; i++) {
+          rchild->key[i] = lchild->key[lchild->n - offset + i];
+          rchild->data[i] = lchild->data[lchild->n - offset + i];
+        }
         // TODO END
       } else {
         // TODO STEP 5：参考上面的代码，完成非叶子结点的数据挪动
-
+        for (long i = rchild->n - 1; i >= 0; i--) {
+          rchild->key[i + offset] = rchild->key[i];
+        }
+        for (long i = rchild->n; i >= 0; i--) {
+          rchild->child[i + offset] = rchild->child[i];
+        }
+        rchild->key[offset - 1] = parent->key[k];
+        for (long i = 0; i < offset - 1; i++) {
+          rchild->key[i] = lchild->key[lchild->n - (offset - 1) + i];
+        }
+        for (long i = 0; i < offset; i++) {
+          rchild->child[i] = lchild->child[lchild->n - offset + 1 + i];
+        }
         // TODO END
       }
       // TODO STEP 5：参考上面的代码，将数据从左节点拷贝到右节点的正确位置
       // TODO STEP 5：注意parent的key数组应该如何更新
-
+      parent->key[k] = lchild->key[lchild->n - offset];
       // TODO END
     }
     lchild->n = left_size;
@@ -220,19 +243,36 @@ void mergeNode(Node *parent, long k) {
   } else { // 两个节点不够分，必须要合并节点，这里选择把右节点合并到左节点中
     if (lchild->isLeaf) {
       // TODO STEP 5：完成叶子结点的数据挪动
-
+      for (long i = 0; i < rchild->n; i++) {
+        lchild->key[lchild->n + i] = rchild->key[i];
+        lchild->data[lchild->n + i] = rchild->data[i];
+      }
       // TODO END
       lchild->n = lchild->n + rchild->n;
       free(rchild->data);
     } else {
       // TODO STEP 5：完成非叶子结点的数据挪动，注意parent的key数组应该如何使用
-
+      // 将父节点的key[k]下移到左节点
+      lchild->key[lchild->n] = parent->key[k];
+      // 将右节点的所有keys复制到左节点
+      for (long i = 0; i < rchild->n; i++) {
+        lchild->key[lchild->n + 1 + i] = rchild->key[i];
+      }
+      // 将右节点的所有child指针复制到左节点
+      for (long i = 0; i <= rchild->n; i++) {
+        lchild->child[lchild->n + 1 + i] = rchild->child[i];
+        lchild->child[lchild->n + 1 + i]->parent = lchild;
+      }
       // TODO END
       lchild->n = lchild->n + rchild->n + 1;
       free(rchild->child);
     }
     // TODO STEP 5：在parent节点的key和child数组中删除相应位置的值
-
+    for (long i = k; i < parent->n - 1; i++) {
+      parent->key[i] = parent->key[i + 1];
+      parent->child[i + 1] = parent->child[i + 2];
+    }
+    parent->child[parent->n] = NULL; // 清空最后一个子指针
     // TODO END
     parent->n--;
     lchild->right = rchild->right;
@@ -246,7 +286,15 @@ long delFromNode(Node *node, long key) {
   if (node->isLeaf) {
     // TODO STEP 4：如果不存在相同的键，返回-1
     // TODO STEP 4：否则在key和data数组中，删除第i位的数据，更新node->n的值
-    
+    if (current_idx == -1 || node->key[current_idx] != key) {
+      return -1;
+    } else {
+      for (long i = current_idx; i < node->n - 1; i++) {
+        node->key[i] = node->key[i + 1];
+        node->data[i] = node->data[i + 1];
+      }
+      node->n--;
+    }
     // TODO END
     return 0;
   }
@@ -263,7 +311,9 @@ long delFromNode(Node *node, long key) {
       node->key[current_idx] = child->key[0];
     }
     // TODO STEP 5：当子节点的key过少时，需要调用mergeNode进行节点的合并
-
+    if (child->n < MIN_KEY) {
+      mergeNode(node, current_idx + 1);
+    }
     // TODO END
   }
   return 0;
@@ -343,7 +393,19 @@ long rangeSearch(Tree *tree, long start, long end, KV *buffer,
   // TODO STEP
   // 7：虽然输入保证了数据量不会超过buffer_length，但是最好应该判断一下
   // TODO STEP 7：提示：利用好right指针，记得统计总数count
-
+  while (r != NULL && (end == -1 || r->key[current_idx] <= end)) {
+    if (count >= buffer_length) {
+      break;
+    }
+    buffer[count].key = r->key[current_idx];
+    buffer[count].value = r->data[current_idx];
+    count++;
+    current_idx++;
+    if (current_idx == r->n) {
+      r = r->right;
+      current_idx = 0;
+    }
+  }
   // TODO END
   return count;
 }
@@ -388,7 +450,11 @@ long delFromTree(Tree *tree, long key) {
   // 检查是否需要替换根节点
   if (tree->root->n == 0 && !tree->root->isLeaf) {
     // TODO STEP 6：将根节点的唯一子节点作为新的根节点，然后删除原根节点的数据
-
+    Node *old_root = tree->root;
+    Node *new_root = old_root->child[0];
+    new_root->parent = NULL;
+    tree->root = new_root;
+    free(old_root);
     // TODO END
   }
   tree->size--;
